@@ -1,0 +1,47 @@
+PODS:
+  - AwaitKit (5.0.0):
+    - PromiseKit (~> 6)
+  - BigInt (3.1.0):
+    - SipHash (~> 1.2)
+  - BluFi (1.0.0):
+    - AwaitKit (~> 5.0.0)
+    - BigInt (~> 3.1)
+    - CryptoSwift (= 0.11.0)
+  - CryptoSwift (0.11.0)
+  - PromiseKit (6.4.0):
+    - PromiseKit/CorePromise (= 6.4.0)
+    - PromiseKit/Foundation (= 6.4.0)
+    - PromiseKit/UIKit (= 6.4.0)
+  - PromiseKit/CorePromise (6.4.0)
+  - PromiseKit/Foundation (6.4.0):
+    - PromiseKit/CorePromise
+  - PromiseKit/UIKit (6.4.0):
+    - PromiseKit/CorePromise
+  - SipHash (1.2.2)
+
+DEPENDENCIES:
+  - BluFi (from `..`)
+
+SPEC REPOS:
+  https://github.com/cocoapods/specs.git:
+    - AwaitKit
+    - BigInt
+    - CryptoSwift
+    - PromiseKit
+    - SipHash
+
+EXTERNAL SOURCES:
+  BluFi:
+    :path: ".."
+
+SPEC CHECKSUMS:
+  AwaitKit: d8a6e30eeb2da916630270b44636b31033388bd8
+  BigInt: 76b5dfdfa3e2e478d4ffdf161aeede5502e2742f
+  BluFi: b24dccb541a10a753d6351613c0612b6f77b64e4
+  CryptoSwift: ad5208dd2aae0a764ea4ce2c2d34bd067cae67f0
+  PromiseKit: ae3616f45d7bb9bf4ff1e91abc9b7a8c48a340e0
+  SipHash: fad90a4683e420c52ef28063063dbbce248ea6d4
+
+PODFILE CHECKSUM: 6b8e6be8418f8b32b16cda2f7c8841b6e641bfd1
+
+COCOAPODS: 1.5.3

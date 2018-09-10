@@ -1,0 +1,52 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "AwaitKit",
+        "repositoryURL": "https://github.com/yannickl/AwaitKit.git",
+        "state": {
+          "branch": null,
+          "revision": "961ea74f7e8d1321bb0104544ffec7b43b031041",
+          "version": "5.0.0"
+        }
+      },
+      {
+        "package": "BigInt",
+        "repositoryURL": "https://github.com/attaswift/BigInt.git",
+        "state": {
+          "branch": null,
+          "revision": "018a5925f60f9e0523edd261de394a0898fe95b7",
+          "version": "3.1.0"
+        }
+      },
+      {
+        "package": "CryptoSwift",
+        "repositoryURL": "https://github.com/krzyzanowskim/CryptoSwift.git",
+        "state": {
+          "branch": null,
+          "revision": "3f6869c469abf3e2ebefe3b6baef4bfac3aac305",
+          "version": "0.11.0"
+        }
+      },
+      {
+        "package": "PromiseKit",
+        "repositoryURL": "https://github.com/mxcl/PromiseKit.git",
+        "state": {
+          "branch": null,
+          "revision": "f7e4db86a1589362a48b8b729d1b37d9bec2d362",
+          "version": "6.4.0"
+        }
+      },
+      {
+        "package": "SipHash",
+        "repositoryURL": "https://github.com/attaswift/SipHash",
+        "state": {
+          "branch": null,
+          "revision": "e325083424688055363bbfcb7f1a440d7d7a1bae",
+          "version": "1.2.2"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
