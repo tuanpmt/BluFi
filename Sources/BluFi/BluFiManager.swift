@@ -36,7 +36,7 @@ struct BluFiError: Error {
     }
 }
 
-class BluFiMangager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
+public final class BluFiMangager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     
     public typealias PeripheralClosure = (CBPeripheral) -> Void
     private let bluFiServiceUUID = CBUUID(string: "0000ffff-0000-1000-8000-00805f9b34fb")
@@ -472,7 +472,7 @@ class BluFiMangager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         centralManager.delegate = self;
     }
     
-    func centralManagerDidUpdateState(_ central: CBCentralManager) {
+    public func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch central.state {
         case .poweredOn:
             bleStateSem.signal()
@@ -482,6 +482,7 @@ class BluFiMangager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         default: break
         }
     }
+    
     func scan(name: String, identifier: CBUUID, count: Int, timeout timeoutSec: Int) -> Promise<String> {
         return Promise {
  
@@ -539,7 +540,7 @@ class BluFiMangager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         return true
     }
     
-    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+    public func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         let data = characteristic.value
         let resultBytes:[UInt8] = Array(UnsafeBufferPointer(start: (data! as NSData).bytes.bindMemory(to: UInt8.self, capacity: data!.count), count: data!.count))
         dataRead = resultBytes
@@ -615,33 +616,11 @@ class BluFiMangager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         return frameCtrlData.hasFrag() ? 1 : 0
     }
     
-    func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
-        firstly {
-            negotiate()
-            }
-//            .then { resp in
-//                return self.writeCustomData([1, 2, 3, 4], false)
-//            }
-//            .then { verison in
-//                return self.getWiFiScanList()
-//            }
-//            .then { customResp in
-//                return self.getDeviceVersion()
-//            }
-//            .then { customResp in
-//                return self.getDeviceStatus()
-//            }
-            .then { customResp in
-                return self.setWiFiSta("JinJiangHotels", "")
-            }
-            .done { resp in
-                print("setWiFiSta = \(resp)")
-            }.catch { err in
-                print("err \(err)")
-        }
+    public func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
+       
     }
     
-    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+    public func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         
         if error == nil {
             
@@ -658,7 +637,7 @@ class BluFiMangager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         }
     }
     
-    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+    public func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         if error == nil {
             for s in peripheral.services! {
                 peripheral.discoverCharacteristics(nil, for: s)

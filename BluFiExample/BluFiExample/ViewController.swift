@@ -10,9 +10,9 @@ import UIKit
 import BluFi
 
 class ViewController: UIViewController {
+    var bluFi: BluFiMangager?
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         // Do any additional setup after loading the view, typically from a nib.
     }
 
