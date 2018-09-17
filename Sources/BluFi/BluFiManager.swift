@@ -8,7 +8,6 @@
 
 
 import Foundation
-import CoreBluetooth
 import CryptoSwift
 import PromiseKit
 import AwaitKit
@@ -36,12 +35,9 @@ struct BluFiError: Error {
     }
 }
 
-public final class BluFiMangager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
+public final class BluFiMangager: NSObject {
     
-    public typealias PeripheralClosure = (CBPeripheral) -> Void
-    private let bluFiServiceUUID = CBUUID(string: "0000ffff-0000-1000-8000-00805f9b34fb")
-    private let bluFiDataOutCharsUUID = CBUUID(string: "0000ff01-0000-1000-8000-00805f9b34fb")
-    private let bluFiDataInCharsUUID = CBUUID(string: "0000ff02-0000-1000-8000-00805f9b34fb")
+   
     private let DH_P = "cf5cf5c38419a724957ff5dd323b9c45c3cdd261eb740f69aa94b8bb1a5c9640" +
         "9153bd76b24222d03274e4725a5406092e9e82e9135c643cae98132b0d95f7d6" +
         "5347c68afc1e677da90e51bbab5f5cf429c291b4ba39c6b2dc5e8c7231e46aa7" +
@@ -54,11 +50,7 @@ public final class BluFiMangager: NSObject, CBCentralManagerDelegate, CBPeripher
     private let DEFAULT_PACKAGE_LENGTH = 80
     private let PACKAGE_HEADER_LENGTH = 4
     
-    var centralManager: CBCentralManager!
-    private var onScannerReady: ((BluFiMangager) -> Void)?
-    private var onDiscover: PeripheralClosure?
-    private var onConnected: PeripheralClosure?
-    private var timer = Timer()
+    private var writeToBluetooth: ((Data) -> Void)?
     private let ackSem = DispatchSemaphore(value: 0)
     private let readSem = DispatchSemaphore(value: 0)
     private let bleStateSem = DispatchSemaphore(value: 0)
@@ -75,11 +67,6 @@ public final class BluFiMangager: NSObject, CBCentralManagerDelegate, CBPeripher
     private var md5SecKey: [UInt8] = []
     private var mEncrypted = false
     private var mChecksum = true
-    
-    fileprivate      var activePeripheral: CBPeripheral!
-    fileprivate      var activeService: CBService!
-    fileprivate      var dataOutCharacteristics: CBCharacteristic?
-    fileprivate      var dataInCharacteristics: CBCharacteristic?
     
     private func generateSeq() -> Int {
         let seq = sendSequence
@@ -210,7 +197,8 @@ public final class BluFiMangager: NSObject, CBCentralManagerDelegate, CBPeripher
             }
             let needWrite = Data.init(bytes: UnsafePointer<UInt8>(data), count: data.count)
             writeLock.wait()
-            activePeripheral?.writeValue(needWrite, for: dataOutCharacteristics!, type: .withResponse)
+            writeToBluetooth?(needWrite)
+//            activePeripheral?.writeValue(needWrite, for: dataOutCharacteristics!, type: .withResponse)
             writeLock.signal()
             return $0.resolve(true, nil)
         }
@@ -312,7 +300,7 @@ public final class BluFiMangager: NSObject, CBCentralManagerDelegate, CBPeripher
         return true
     }
     
-    private func negotiate() -> Promise<Bool> {
+    public func negotiate() -> Promise<Bool> {
         return async {
             /* 1. Write package length */
             let type = self.getTypeValue(type: Type.Data.PACKAGE_VALUE, subtype: Type.Data.SUBTYPE_NEG)
@@ -464,88 +452,25 @@ public final class BluFiMangager: NSObject, CBCentralManagerDelegate, CBPeripher
         }
     }
     
-    public init(onScannerReady: @escaping (BluFiMangager) -> Void) {
-        self.onScannerReady = onScannerReady
+    public init(writeToBluetooth: @escaping (Data) -> Void) {
+        self.writeToBluetooth = writeToBluetooth
         self.mPackageLengthLimit = DEFAULT_PACKAGE_LENGTH
-        centralManager = CBCentralManager(delegate: nil, queue: nil)
         super.init()
-        centralManager.delegate = self;
     }
     
-    public func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        switch central.state {
-        case .poweredOn:
-            bleStateSem.signal()
-        case .poweredOff:
-            central.stopScan()
-        case .unsupported: fatalError("Unsupported BLE module")
-        default: break
-        }
-    }
-    
-    func scan(name: String, identifier: CBUUID, count: Int, timeout timeoutSec: Int) -> Promise<String> {
-        return Promise {
  
-            let timeout = DispatchTime.now() + .seconds(timeoutSec)
-            if bleStateSem.wait(timeout: timeout) != .success {
-                return $0.reject(BluFiError("Powerup timeout"))
-            }
-            centralManager.scanForPeripherals(withServices: [bluFiServiceUUID], options: nil)
-            // while false {
-            //     if bleStateSem.wait(timeout: timeout) != .success {
-            //         return $0.reject(BluFiError("Get scan result timeout"))
-            //     }
-            // }
-            return $0.resolve("String", nil)
-        }
-    }
-    
-    func startScanning(_ onDiscover: @escaping PeripheralClosure) {
-        self.onDiscover = onDiscover
-        self.timer.invalidate()
-        centralManager.scanForPeripherals(withServices: [bluFiServiceUUID], options: nil)
-        Timer.scheduledTimer(timeInterval: 30, target: self, selector: #selector(self.cancelScan), userInfo: nil, repeats: false)
-    }
-    /*We also need to stop scanning at some point so we'll also create a function that calls "stopScan"*/
-    @objc func cancelScan() {
-        self.centralManager?.stopScan()
-        print("Scan Stopped")
-    }
-    // MARK: - CBCentralManagerDelegate
-    
-    public func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-        onDiscover?(peripheral)
-    }
-    
-    public func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        print("Connected!, discoverServices")
-        //        activePeripheral?.delegate = self as! CBPeripheralDelegate
-        peripheral.delegate = self;
-        peripheral.discoverServices([bluFiServiceUUID])
-        
-        onConnected?(peripheral)
-    }
-    
-    func connect(peripheral: CBPeripheral, _ onConnected: @escaping PeripheralClosure) -> Bool {
-        self.onConnected = onConnected
-        if centralManager.state != .poweredOn {
-            print("[ERROR] Couldn´t connect to peripheral")
-            return false
-        }
-        activePeripheral = peripheral
-        
-        // print("[DEBUG] Connecting to peripheral: \(peripheral.identifier.uuidString)")
-        centralManager.connect(peripheral, options: [CBConnectPeripheralOptionNotifyOnDisconnectionKey : NSNumber(value: true)])
-        centralManager.stopScan()
-        return true
-    }
-    
-    public func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        let data = characteristic.value
-        let resultBytes:[UInt8] = Array(UnsafeBufferPointer(start: (data! as NSData).bytes.bindMemory(to: UInt8.self, capacity: data!.count), count: data!.count))
+    public func readFromBluetooth(_ data: Data) -> Void {
+        let resultBytes:[UInt8] = Array(UnsafeBufferPointer(start: (data as NSData).bytes.bindMemory(to: UInt8.self, capacity: data.count), count: data.count))
         dataRead = resultBytes
         readSem.signal()
     }
+    
+//    public func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+//        let data = characteristic.value
+//        let resultBytes:[UInt8] = Array(UnsafeBufferPointer(start: (data! as NSData).bytes.bindMemory(to: UInt8.self, capacity: data!.count), count: data!.count))
+//        dataRead = resultBytes
+//        readSem.signal()
+//    }
     
     private func parseNotification(data: [UInt8], notification: BlufiNotiData) -> Int {
         if data.count < 4 {
@@ -615,39 +540,6 @@ public final class BluFiMangager: NSObject, CBCentralManagerDelegate, CBPeripher
         notification.addData(bytes: notificationData)
         return frameCtrlData.hasFrag() ? 1 : 0
     }
-    
-    public func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
-       
-    }
-    
-    public func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
-        
-        if error == nil {
-            
-            for c in service.characteristics! {
-                if c.uuid.isEqual(bluFiDataOutCharsUUID) {
-                    dataOutCharacteristics = c
-                } else if c.uuid.isEqual(bluFiDataInCharsUUID) {
-                    dataInCharacteristics = c
-                    activePeripheral!.setNotifyValue(true, for: dataInCharacteristics!)
-                }
-                print("Discover Charateristic \(c) and \(c.uuid.isEqual(bluFiDataOutCharsUUID))")
-            }
-            
-        }
-    }
-    
-    public func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        if error == nil {
-            for s in peripheral.services! {
-                peripheral.discoverCharacteristics(nil, for: s)
-            }
-        }
-        else {
-            print("There are no services")
-        }
-    }
-    
 }
 
 

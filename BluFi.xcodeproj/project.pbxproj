@@ -8,17 +8,17 @@
 
 /* Begin PBXBuildFile section */
 		FF2530DC21460BF20064EB9C /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = FF2530DB21460BF10064EB9C /* Info.plist */; };
-		FF2530E121460D520064EB9C /* DHKeyExchangeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2530DE21460D520064EB9C /* DHKeyExchangeManager.swift */; };
 		FF2530E221460D520064EB9C /* BluFiParameter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2530DF21460D520064EB9C /* BluFiParameter.swift */; };
 		FF2530E321460D520064EB9C /* BluFiManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2530E021460D520064EB9C /* BluFiManager.swift */; };
+		FFB1B3862150139600DD8634 /* DHKeyExchange.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFB1B3852150139600DD8634 /* DHKeyExchange.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		FF2530CB21460AC00064EB9C /* BluFi.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = BluFi.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		FF2530DB21460BF10064EB9C /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		FF2530DE21460D520064EB9C /* DHKeyExchangeManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DHKeyExchangeManager.swift; sourceTree = "<group>"; };
 		FF2530DF21460D520064EB9C /* BluFiParameter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BluFiParameter.swift; sourceTree = "<group>"; };
 		FF2530E021460D520064EB9C /* BluFiManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BluFiManager.swift; sourceTree = "<group>"; };
+		FFB1B3852150139600DD8634 /* DHKeyExchange.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DHKeyExchange.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,7 +61,7 @@
 			children = (
 				FF2530E021460D520064EB9C /* BluFiManager.swift */,
 				FF2530DF21460D520064EB9C /* BluFiParameter.swift */,
-				FF2530DE21460D520064EB9C /* DHKeyExchangeManager.swift */,
+				FFB1B3852150139600DD8634 /* DHKeyExchange.swift */,
 				FF2530DB21460BF10064EB9C /* Info.plist */,
 			);
 			path = BluFi;
@@ -148,7 +148,7 @@
 			files = (
 				FF2530E321460D520064EB9C /* BluFiManager.swift in Sources */,
 				FF2530E221460D520064EB9C /* BluFiParameter.swift in Sources */,
-				FF2530E121460D520064EB9C /* DHKeyExchangeManager.swift in Sources */,
+				FFB1B3862150139600DD8634 /* DHKeyExchange.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

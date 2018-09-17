@@ -3,6 +3,6 @@ use_frameworks!
 
 target 'BluFiExample' do
   platform :ios, '8.0'
-
+  pod 'RxBluetoothKit', '~> 5.1.3'
   pod 'BluFi', :path => '..'
 end
