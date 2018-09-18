@@ -79,6 +79,9 @@ class ViewController: UIViewController {
     @IBAction func setupWiFiTouchUp(_ sender: Any) {
         self.bluFi?.setWiFiSta("WiFiSSID", "wifiPassword")
     }
+    @IBAction func writeCustomData(_ sender: Any) {
+        self.bluFi?.writeCustomData([1, 2, 3], false)
+    }
     
 }
 

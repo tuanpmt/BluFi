@@ -365,7 +365,7 @@ public final class BluFiMangager: NSObject {
         }
     }
     
-    func writeCustomData(_ data: [UInt8], _ needResponse: Bool) -> Promise<[UInt8]> {
+    public func writeCustomData(_ data: [UInt8], _ needResponse: Bool) -> Promise<[UInt8]> {
         return async {
             let type = self.getTypeValue(type: Type.Data.PACKAGE_VALUE, subtype: Type.Data.SUBTYPE_CUSTOM_DATA)
             let respData = try await(self.writeFrame(type, data, self.WRITE_TIMEOUT_SECOND, needResponse))
@@ -381,7 +381,7 @@ public final class BluFiMangager: NSObject {
         }
     }
     
-    func getWiFiScanList() -> Promise<[WiFiEntry]> {
+    public func getWiFiScanList() -> Promise<[WiFiEntry]> {
         return async {
             let type = self.getTypeValue(type: Type.Ctrl.PACKAGE_VALUE, subtype: Type.Ctrl.SUBTYPE_GET_WIFI_LIST)
             let respData = try await(self.writeFrame(type, [], self.WRITE_TIMEOUT_SECOND, true))

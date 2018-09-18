@@ -8,7 +8,7 @@
 
 import Foundation
 
-struct WiFiEntry {
+public struct WiFiEntry {
     public var ssid: String
     public var rssi: Int8
     
