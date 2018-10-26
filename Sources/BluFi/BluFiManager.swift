@@ -146,7 +146,6 @@ public final class BluFiMangager: NSObject {
                 let iv = generateAESIV(sequence)
                 let aes = try AES(key: md5SecKey, blockMode: CFB(iv: iv), padding: .noPadding)
                 resultData = try aes.encrypt(data)
-                print("Data: \(data.toHexString()) \nencrypt: \(resultData.toHexString())")
             } catch {
                 resultData = data
             }
@@ -302,6 +301,7 @@ public final class BluFiMangager: NSObject {
     
     public func negotiate() -> Promise<Bool> {
         return async {
+            self.resetSeq()
             /* 1. Write package length */
             let type = self.getTypeValue(type: Type.Data.PACKAGE_VALUE, subtype: Type.Data.SUBTYPE_NEG)
             self.secDHKeys = DHKeyExchange.genDHExchangeKeys(generator: self.DH_G, primeNumber: self.DH_P)
@@ -358,7 +358,6 @@ public final class BluFiMangager: NSObject {
             // data Encrypt
             secData = secData | (1 << 1)
             
-            print("postSetSecurity")
             let postData: [UInt8] = [UInt8(secData)]
             _ = try await(self.writeFrame(secType, postData, self.WRITE_TIMEOUT_SECOND, false))
             return true
@@ -367,6 +366,7 @@ public final class BluFiMangager: NSObject {
     
     public func writeCustomData(_ data: [UInt8], _ needResponse: Bool) -> Promise<[UInt8]> {
         return async {
+            self.resetSeq()
             let type = self.getTypeValue(type: Type.Data.PACKAGE_VALUE, subtype: Type.Data.SUBTYPE_CUSTOM_DATA)
             let respData = try await(self.writeFrame(type, data, self.WRITE_TIMEOUT_SECOND, needResponse))
             if !needResponse {
@@ -438,7 +438,7 @@ public final class BluFiMangager: NSObject {
         }
     }
     
-    public func setWiFiSta(_ ssid: String, _ password: String) -> Promise<Bool> {
+    public func setWiFiSta(_ ssid: String, _ password: String) -> Promise<[UInt8]> {
         return async {
             var type = self.getTypeValue(type: Type.Data.PACKAGE_VALUE, subtype: Type.Data.SUBTYPE_STA_WIFI_SSID)
             _ = try await(self.writeFrame(type, [UInt8](ssid.utf8), self.WRITE_TIMEOUT_SECOND, false))
@@ -447,8 +447,17 @@ public final class BluFiMangager: NSObject {
             _ = try await(self.writeFrame(type, [UInt8](password.utf8), self.WRITE_TIMEOUT_SECOND, false))
             
             type = self.getTypeValue(type: Type.Ctrl.PACKAGE_VALUE, subtype: Type.Ctrl.SUBTYPE_CONNECT_WIFI)
-            _ = try await(self.writeFrame(type, [UInt8](password.utf8), self.WRITE_TIMEOUT_SECOND, false))
-            return true
+            let respData = try await(self.writeFrame(type, [UInt8](password.utf8), self.WRITE_TIMEOUT_SECOND, true))
+            
+            if !self.validPackage(respData, Type.Data.PACKAGE_VALUE, Type.Data.SUBTYPE_WIFI_CONNECTION_STATE) {
+                self.resetSeq()
+                throw BluFiError("Invalid response for WiFi status")
+            }
+            let dataArray = respData.getDataArray()
+            if dataArray.count < 3 {
+                throw BluFiError("Invalid data size")
+            }
+            return respData.getDataArray()
         }
     }
     
@@ -478,8 +487,9 @@ public final class BluFiMangager: NSObject {
             return -2;
         }
         let sequence = Int(data[2])
+        let recvSeq = getSeq()
         if sequence != getSeq() {
-            print("parseNotification read sequence wrong sequence=\(sequence), recvSequence")
+            print("parseNotification read sequence wrong sequence=\(sequence), recvSequence=\(recvSeq)")
             return -3;
         }
         
