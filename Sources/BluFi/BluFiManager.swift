@@ -74,6 +74,7 @@ public final class BluFiMangager: NSObject {
         return seq
     }
     private func getSeq() -> Int {
+//        let saveSeq = recvSequence
         recvSequence += 1
         return recvSequence
     }
@@ -366,7 +367,6 @@ public final class BluFiMangager: NSObject {
     
     public func writeCustomData(_ data: [UInt8], _ needResponse: Bool) -> Promise<[UInt8]> {
         return async {
-            self.resetSeq()
             let type = self.getTypeValue(type: Type.Data.PACKAGE_VALUE, subtype: Type.Data.SUBTYPE_CUSTOM_DATA)
             let respData = try await(self.writeFrame(type, data, self.WRITE_TIMEOUT_SECOND, needResponse))
             if !needResponse {
@@ -488,8 +488,8 @@ public final class BluFiMangager: NSObject {
         }
         let sequence = Int(data[2])
         let recvSeq = getSeq()
-        if sequence != getSeq() {
-            print("parseNotification read sequence wrong sequence=\(sequence), recvSequence=\(recvSeq)")
+        if sequence != recvSeq {
+            print("parseNotification read sequence wrong sequence=\(sequence), recvSeq=\(recvSeq)")
             return -3;
         }
         

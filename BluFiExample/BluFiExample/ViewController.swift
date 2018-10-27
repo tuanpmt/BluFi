@@ -31,16 +31,23 @@ class ViewController: UIViewController {
     @IBOutlet weak var passTxt: UITextField!
     @IBOutlet weak var writeDataBtn: UIButton!
     @IBOutlet weak var lblIp: UILabel!
+    @IBOutlet weak var lblModel: UILabel!
+    @IBOutlet weak var lblHwID: UILabel!
+    @IBOutlet weak var accessIdTxt: UITextField!
+    @IBOutlet weak var accessKeyTxt: UITextField!
+    @IBOutlet weak var writeNullBtn: UIButton!
     
     func scanAndConnect() {
         let state: BluetoothState = manager.state
         
-        manager.observeState()
+        _ = manager.observeState()
             .startWith(state)
             .filter { $0 == .poweredOn }
             .flatMap { _ in self.manager.scanForPeripherals(withServices: [self.bluFiServiceUUID]) }
             .take(1)
-            .flatMap { $0.peripheral.establishConnection() }
+            .flatMap { d in
+                d.peripheral.establishConnection()
+            }
             .flatMap { $0.discoverServices([self.bluFiServiceUUID]) }.asObservable()
             .flatMap { Observable.from($0) }
             .flatMap { $0.discoverCharacteristics([self.bluFiDataInCharsUUID, self.bluFiDataOutCharsUUID])}.asObservable()
@@ -48,7 +55,7 @@ class ViewController: UIViewController {
             .subscribe(onNext: { characteristic in
                 if characteristic.uuid == self.bluFiDataInCharsUUID {
                     self.dataInCharacteristics = characteristic
-                    characteristic
+                    _ = characteristic
                         .observeValueUpdateAndSetNotification()
                         .subscribe(onNext: {
                             let data = $0.value
@@ -56,6 +63,7 @@ class ViewController: UIViewController {
                         })
                     self.isBluFiFinish = ((self.bluFi?.negotiate()) != nil)
                     self.writeDataBtn.isEnabled = self.isBluFiFinish
+                    self.writeNullBtn.isEnabled = self.isBluFiFinish
                 }
                 if characteristic.uuid == self.bluFiDataOutCharsUUID {
                     self.dataOutCharacteristics = characteristic
@@ -67,7 +75,7 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         bluFi = BluFiMangager(writeToBluetooth: { (data) in
             //write data to Bluetooth
-            self.dataOutCharacteristics?
+            _ = self.dataOutCharacteristics?
                 .writeValue(data, type: .withResponse)
                 .subscribe(onSuccess: { characteristic in
                     print("write done")
@@ -76,6 +84,7 @@ class ViewController: UIViewController {
                 })
         })
         writeDataBtn.isEnabled = false
+        writeNullBtn.isEnabled = false
         scanAndConnect()
         ssidTxt.text = self.getWiFiSsid()
     }
@@ -109,20 +118,35 @@ class ViewController: UIViewController {
     @IBAction func writeCustomData(_ sender: Any) {
         let password = passTxt.text ?? ""
         let ssid = ssidTxt.text ?? ""
+        let accessId = accessIdTxt.text ?? ""
+        let accessKey = accessKeyTxt.text ?? ""
         lblIp.text = ""
-        let wifiData = "{\"ssid\":\"" + ssid + "\", \"password\": \"" + password + "\"}"
-        self.bluFi?.writeCustomData([UInt8](wifiData.utf8), true).done({ (data) in
+        let wifiData = "{\"ssid\":\"" + ssid + "\", \"password\": \"" + password + "\", \"access_id\":\"" + accessId + "\", \"access_key\":\"" + accessKey + "\"}"
+        _ = self.bluFi?.writeCustomData([UInt8](wifiData.utf8), true).done({ (data) in
             
             let jsonString = String(bytes: data, encoding: .utf8)
             let json = self.convertToDictionary(jsonString ?? "")
-  
-            self.lblIp.text = json?["ip"] as! String
-            print("receive data \(data), json: \(json)")
+            
+            self.lblIp.text = json?["ip"] as? String
+            print("receive data \(data), json: \(String(describing: json))")
         })
     }
-
-
+    
+    @IBAction func writeCustomNullData(_ sender: Any) {
+        _ = self.bluFi?.writeCustomData([UInt8]([0]), true).done({ (data) in
+            
+            let jsonString = String(bytes: data, encoding: .utf8)
+            let json = self.convertToDictionary(jsonString ?? "")
+            
+            self.lblIp.text = json?["ip"] as? String
+            self.lblModel.text = json?["model"] as? String
+            self.lblHwID.text = json?["hw_id"] as? String
+            print("receive data \(data), json: \(String(describing: json))")
+        })
+    }
+    
     @IBAction func ScanAndConnect(_ sender: Any) {
         scanAndConnect()
     }
 }
+
