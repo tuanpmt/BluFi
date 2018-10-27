@@ -490,6 +490,7 @@ public final class BluFiMangager: NSObject {
         let recvSeq = getSeq()
         if sequence != recvSeq {
             print("parseNotification read sequence wrong sequence=\(sequence), recvSeq=\(recvSeq)")
+            self.recvSequence = sequence
             return -3;
         }
         
