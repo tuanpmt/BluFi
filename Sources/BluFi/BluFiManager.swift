@@ -74,9 +74,9 @@ public final class BluFiMangager: NSObject {
         return seq
     }
     private func getSeq() -> Int {
-        let saveSeq = recvSequence
+//        let saveSeq = recvSequence
         recvSequence += 1
-        return saveSeq
+        return recvSequence
     }
     
     private func generateAESIV(_ sequence: Int) -> [UInt8] {
@@ -162,7 +162,7 @@ public final class BluFiMangager: NSObject {
     
     private func resetSeq() {
         sendSequence = 0
-        recvSequence = 0
+        recvSequence = -1
     }
     
     private func read(_ timeout_sec: Int) -> Promise<BlufiNotiData> {
@@ -489,9 +489,11 @@ public final class BluFiMangager: NSObject {
         let sequence = Int(data[2])
         let recvSeq = getSeq()
         if sequence != recvSeq {
-            print("wrong sequence=\(sequence), recvSeq=\(recvSeq)")
-            self.recvSequence = sequence
-             return -3;
+            print("wrong recvSEQ=\(sequence), appSEQ=\(recvSeq)")
+            recvSequence = sequence - 1
+            sendSequence = sequence
+            //resetSeq()
+//            return -3
         }
         
         let type = Int(data[0])

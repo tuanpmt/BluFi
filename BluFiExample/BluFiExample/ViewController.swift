@@ -25,6 +25,7 @@ class ViewController: UIViewController {
     fileprivate      var dataOutCharacteristics: Characteristic?
     fileprivate      var dataInCharacteristics: Characteristic?
     var isBluFiFinish = false
+    var blufi:Disposable? = nil
     
     @IBOutlet weak var setupWifi: UIButton!
     @IBOutlet weak var ssidTxt: UITextField!
@@ -36,11 +37,25 @@ class ViewController: UIViewController {
     @IBOutlet weak var accessIdTxt: UITextField!
     @IBOutlet weak var accessKeyTxt: UITextField!
     @IBOutlet weak var writeNullBtn: UIButton!
+    @IBOutlet weak var rebootButton: UIButton!
+    @IBOutlet weak var exitCfgButton: UIButton!
     
     func scanAndConnect() {
         let state: BluetoothState = manager.state
+        accessIdTxt.text = ""
+        accessKeyTxt.text = ""
+        lblHwID.text = ""
+        lblModel.text = ""
+        lblIp.text = ""
         
-        _ = manager.observeState()
+        writeDataBtn.isEnabled = false
+        writeNullBtn.isEnabled = false
+        rebootButton.isEnabled = false
+        exitCfgButton.isEnabled = false
+        if blufi != nil {
+            blufi?.dispose()
+        }
+        blufi = manager.observeState()
             .startWith(state)
             .filter { $0 == .poweredOn }
             .flatMap { _ in self.manager.scanForPeripherals(withServices: [self.bluFiServiceUUID]) }
@@ -64,11 +79,14 @@ class ViewController: UIViewController {
                     self.isBluFiFinish = ((self.bluFi?.negotiate()) != nil)
                     self.writeDataBtn.isEnabled = self.isBluFiFinish
                     self.writeNullBtn.isEnabled = self.isBluFiFinish
+                    self.rebootButton.isEnabled = self.isBluFiFinish
+                    self.exitCfgButton.isEnabled = self.isBluFiFinish
                 }
                 if characteristic.uuid == self.bluFiDataOutCharsUUID {
                     self.dataOutCharacteristics = characteristic
                 }
             })
+        
     }
     
     override func viewDidLoad() {
@@ -83,8 +101,8 @@ class ViewController: UIViewController {
                     print("write error \(error)")
                 })
         })
-        writeDataBtn.isEnabled = false
-        writeNullBtn.isEnabled = false
+        
+        
         scanAndConnect()
         ssidTxt.text = self.getWiFiSsid()
     }
@@ -121,7 +139,7 @@ class ViewController: UIViewController {
         let accessId = accessIdTxt.text ?? ""
         let accessKey = accessKeyTxt.text ?? ""
         lblIp.text = ""
-        let wifiData = "{\"ssid\":\"" + ssid + "\", \"password\": \"" + password + "\", \"access_id\":\"" + accessId + "\", \"access_key\":\"" + accessKey + "\"}"
+        let wifiData = "{\"cmd\": \"write_data\", \"ssid\":\"" + ssid + "\", \"password\": \"" + password + "\", \"access_id\":\"" + accessId + "\", \"access_key\":\"" + accessKey + "\"}"
         _ = self.bluFi?.writeCustomData([UInt8](wifiData.utf8), true).done({ (data) in
             
             let jsonString = String(bytes: data, encoding: .utf8)
@@ -133,7 +151,9 @@ class ViewController: UIViewController {
     }
     
     @IBAction func writeCustomNullData(_ sender: Any) {
-        _ = self.bluFi?.writeCustomData([UInt8]([0]), true).done({ (data) in
+        let wifiData = "{\"cmd\": \"read_data\"}"
+        
+        _ = self.bluFi?.writeCustomData([UInt8](wifiData.utf8), true).done({ (data) in
             
             let jsonString = String(bytes: data, encoding: .utf8)
             let json = self.convertToDictionary(jsonString ?? "")
@@ -141,10 +161,33 @@ class ViewController: UIViewController {
             self.lblIp.text = json?["ip"] as? String
             self.lblModel.text = json?["model"] as? String
             self.lblHwID.text = json?["hw_id"] as? String
+            self.accessIdTxt.text = json?["access_id"] as? String
+            self.accessKeyTxt.text = json?["access_key"] as? String
             print("receive data \(data), json: \(String(describing: json))")
         })
     }
     
+    @IBAction func rebootBtn(_ sender: Any) {
+        let wifiData = "{\"cmd\": \"reboot\"}"
+        
+        _ = self.bluFi?.writeCustomData([UInt8](wifiData.utf8), true).done({ (data) in
+            
+            let jsonString = String(bytes: data, encoding: .utf8)
+            let json = self.convertToDictionary(jsonString ?? "")
+            print("receive data \(data), json: \(String(describing: json))")
+        })
+    }
+    
+    @IBAction func exitCfgModeBtn(_ sender: Any) {
+        let wifiData = "{\"cmd\": \"exit_config\"}"
+        
+        _ = self.bluFi?.writeCustomData([UInt8](wifiData.utf8), true).done({ (data) in
+            
+            let jsonString = String(bytes: data, encoding: .utf8)
+            let json = self.convertToDictionary(jsonString ?? "")
+            print("receive data \(data), json: \(String(describing: json))")
+        })
+    }
     @IBAction func ScanAndConnect(_ sender: Any) {
         scanAndConnect()
     }
