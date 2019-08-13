@@ -46,7 +46,7 @@ public final class BluFiMangager: NSObject {
     
     private let DIRECTION_INPUT = 1
     private let DIRECTION_OUTPUT = 0
-    private let WRITE_TIMEOUT_SECOND = 60
+    private let WRITE_TIMEOUT_SECOND = 10
     private let DEFAULT_PACKAGE_LENGTH = 80
     private let PACKAGE_HEADER_LENGTH = 4
     
@@ -58,7 +58,7 @@ public final class BluFiMangager: NSObject {
     private var dataRead: [UInt8] = []
     //    private let dispatchGroup = DispatchGroup()
     private var sendSequence: Int = 0
-    private var recvSequence: Int = -1
+    private var recvSequence: Int = 0
     private var ackSequence: Int = -1
     private var mPackageLengthLimit: Int
     private var requireAck: Bool = false
@@ -74,9 +74,9 @@ public final class BluFiMangager: NSObject {
         return seq
     }
     private func getSeq() -> Int {
-//        let saveSeq = recvSequence
+        let saveSeq = recvSequence
         recvSequence += 1
-        return recvSequence
+        return saveSeq
     }
     
     private func generateAESIV(_ sequence: Int) -> [UInt8] {
@@ -162,14 +162,13 @@ public final class BluFiMangager: NSObject {
     
     private func resetSeq() {
         sendSequence = 0
-        recvSequence = -1
+        recvSequence = 0
     }
     
     private func read(_ timeout_sec: Int) -> Promise<BlufiNotiData> {
         return Promise {
             let blufiData: BlufiNotiData = BlufiNotiData()
             while true {
-                print("read")
                 let timeout = DispatchTime.now() + .seconds(timeout_sec)
                 if readSem.wait(timeout: timeout) != .success {
                     print("read timeout")
@@ -232,14 +231,14 @@ public final class BluFiMangager: NSObject {
                 if self.mChecksum {
                     postDataLengthLimit -= 2
                 }
-                
+                let sequence = self.generateSeq()
                 if dataRemain.count > postDataLengthLimit {
                     let frameCtrl = self.getFrameCtrlValue(encrypt: self.mEncrypted,
                                                            checksum: self.mChecksum,
                                                            direction: self.DIRECTION_OUTPUT,
                                                            requireAck: self.requireAck,
                                                            frag: true)
-                    let sequence = self.generateSeq()
+                    
                     let totleLen = dataRemain.count
                     let totleLen1 = totleLen & 0xff
                     let totleLen2 = (totleLen >> 8) & 0xff
@@ -263,7 +262,6 @@ public final class BluFiMangager: NSObject {
                                                            direction: self.DIRECTION_OUTPUT,
                                                            requireAck: self.requireAck,
                                                            frag: false)
-                    let sequence = self.generateSeq()
                     
                     let postBytes = self.getPostBytes(type: type,
                                                       frameCtrl: frameCtrl,
@@ -366,9 +364,14 @@ public final class BluFiMangager: NSObject {
     }
     
     public func writeCustomData(_ data: [UInt8], _ needResponse: Bool) -> Promise<[UInt8]> {
+        return writeCustomData(data, needResponse ? self.WRITE_TIMEOUT_SECOND : 0)
+    }
+    
+    public func writeCustomData(_ data: [UInt8], _ timeout_sec: Int = 0) -> Promise<[UInt8]> {
         return async {
             let type = self.getTypeValue(type: Type.Data.PACKAGE_VALUE, subtype: Type.Data.SUBTYPE_CUSTOM_DATA)
-            let respData = try await(self.writeFrame(type, data, self.WRITE_TIMEOUT_SECOND, needResponse))
+            let needResponse = timeout_sec > 0
+            let respData = try await(self.writeFrame(type, data, timeout_sec, needResponse))
             if !needResponse {
                 return []
             }
@@ -464,6 +467,7 @@ public final class BluFiMangager: NSObject {
     public init(writeToBluetooth: @escaping (Data) -> Void) {
         self.writeToBluetooth = writeToBluetooth
         self.mPackageLengthLimit = DEFAULT_PACKAGE_LENGTH
+        
         super.init()
     }
     
@@ -471,6 +475,11 @@ public final class BluFiMangager: NSObject {
     public func readFromBluetooth(_ data: Data) -> Void {
         let resultBytes:[UInt8] = Array(UnsafeBufferPointer(start: (data as NSData).bytes.bindMemory(to: UInt8.self, capacity: data.count), count: data.count))
         dataRead = resultBytes
+        readSem.signal()
+    }
+    
+    public func read(_ data: [UInt8]) -> Void {
+        dataRead = data
         readSem.signal()
     }
     
@@ -493,7 +502,7 @@ public final class BluFiMangager: NSObject {
             recvSequence = sequence - 1
             sendSequence = sequence
             //resetSeq()
-//            return -3
+            return -3
         }
         
         let type = Int(data[0])
