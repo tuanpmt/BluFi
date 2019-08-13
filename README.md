@@ -13,7 +13,7 @@
 
 ## Installation
 
-The recommended approach to use _AwaitKit_ in your project is using the [CocoaPods](http://cocoapods.org/) package manager, as it provides flexible dependency management and dead simple installation.
+The recommended approach to use _BluFi_ in your project is using the [CocoaPods](http://cocoapods.org/) package manager, as it provides flexible dependency management and dead simple installation.
 
 ### CocoaPods
 
@@ -31,7 +31,7 @@ $ touch Podfile
 $ edit Podfile
 source 'https://github.com/CocoaPods/Specs.git'
 platform :ios, '8.0'
-pod 'BluFi', '~> 0.9.0'
+pod 'BluFi', '~> 1.0.0'
 ```
 
 Install into your project:
@@ -40,7 +40,7 @@ Install into your project:
 $ pod install
 ```
 
-If CocoaPods did not find the `AwaitKit 5.0.0` dependency execute this command:
+If CocoaPods did not find the `BluFi 1.0.0` dependency execute this command:
 
 ```bash
 $ pod repo update
